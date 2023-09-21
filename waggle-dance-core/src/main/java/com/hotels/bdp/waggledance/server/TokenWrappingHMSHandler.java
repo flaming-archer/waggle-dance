@@ -15,16 +15,16 @@
  */
 package com.hotels.bdp.waggledance.server;
 
+import lombok.extern.log4j.Log4j2;
+
+import org.apache.hadoop.hive.metastore.IHMSHandler;
+import org.apache.hadoop.security.UserGroupInformation;
+
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.UndeclaredThrowableException;
-
-import org.apache.hadoop.hive.metastore.IHMSHandler;
-import org.apache.hadoop.security.UserGroupInformation;
-
-import lombok.extern.log4j.Log4j2;
 
 @Log4j2
 public class TokenWrappingHMSHandler implements InvocationHandler {
@@ -77,9 +77,19 @@ public class TokenWrappingHMSHandler implements InvocationHandler {
             tokens.remove();
             return method.invoke(baseHandler, args);
           default:
+            currUser = UserGroupInformation.getCurrentUser();
+            UserGroupInformation loginUser = UserGroupInformation.getLoginUser();
+            log.info(
+                String.format("currUser is %s, hashcode is %s", currUser, currUser.hashCode()));
+            log.info(
+                String.format("loginUser is %s, hashcode is %s", loginUser, loginUser.hashCode()));
+            log.info(String.format("currUser == loginUser is %s", currUser == loginUser));
+            log.info(String.format("tokens.get().isEmpty() %s", tokens.get().isEmpty()));
+
             if (tokens.get().isEmpty() && (currUser = UserGroupInformation.getCurrentUser())
                     != UserGroupInformation.getLoginUser()) {
 
+              log.info(String.format("begin invoke get delegation token by user"));
               String shortName = currUser.getShortUserName();
               token = baseHandler.get_delegation_token(shortName, shortName);
               log.info(String.format("get delegation token by user %s", shortName));
