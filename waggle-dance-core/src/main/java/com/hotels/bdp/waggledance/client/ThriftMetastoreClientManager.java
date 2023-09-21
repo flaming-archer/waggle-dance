@@ -114,7 +114,7 @@ class ThriftMetastoreClientManager implements Closeable {
       return;
     }
     TException te = null;
-    boolean useSasl = conf.getBoolVar(ConfVars.METASTORE_USE_THRIFT_SASL);
+    boolean useSasl = true;
     boolean useSsl = conf.getBoolVar(ConfVars.HIVE_METASTORE_USE_SSL);
     boolean useFramedTransport = conf.getBoolVar(ConfVars.METASTORE_USE_THRIFT_FRAMED_TRANSPORT);
     boolean useCompactProtocol = conf.getBoolVar(ConfVars.METASTORE_USE_THRIFT_COMPACT_PROTOCOL);
@@ -238,7 +238,7 @@ class ThriftMetastoreClientManager implements Closeable {
   }
 
   public Boolean isSaslEnabled() {
-    return conf.getBoolVar(ConfVars.METASTORE_USE_THRIFT_SASL);
+    return true;
   }
 
   @Override

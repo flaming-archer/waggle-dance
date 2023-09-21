@@ -58,7 +58,7 @@ class TSetIpAddressProcessorFactory extends TProcessorFactory {
       }
       CloseableIHMSHandler baseHandler = federatedHMSHandlerFactory.create();
 
-      boolean useSASL = hiveConf.getBoolVar(HiveConf.ConfVars.METASTORE_USE_THRIFT_SASL);
+      boolean useSASL = true;
       if (useSASL) {
         IHMSHandler tokenHandler = TokenWrappingHMSHandler.newProxyInstance(baseHandler, useSASL);
         IHMSHandler handler = newRetryingHMSHandler(ExceptionWrappingHMSHandler.newProxyInstance(tokenHandler), hiveConf,
