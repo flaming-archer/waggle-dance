@@ -17,23 +17,24 @@ package com.hotels.bdp.waggledance.client;
 
 import static com.hotels.bdp.waggledance.api.model.ConnectionType.TUNNELED;
 
+import com.hotels.bdp.waggledance.api.model.AbstractMetaStore;
+import com.hotels.bdp.waggledance.client.tunnelling.TunnelingMetaStoreClientFactory;
+import com.hotels.bdp.waggledance.conf.WaggleDanceConfiguration;
+import com.hotels.hcommon.hive.metastore.conf.HiveConfFactory;
+import com.hotels.hcommon.hive.metastore.util.MetaStoreUriNormaliser;
+import lombok.AllArgsConstructor;
+import lombok.extern.log4j.Log4j2;
+
+import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
-
-import lombok.AllArgsConstructor;
-
-import com.hotels.bdp.waggledance.api.model.AbstractMetaStore;
-import com.hotels.bdp.waggledance.client.tunnelling.TunnelingMetaStoreClientFactory;
-import com.hotels.bdp.waggledance.conf.WaggleDanceConfiguration;
-import com.hotels.hcommon.hive.metastore.conf.HiveConfFactory;
-import com.hotels.hcommon.hive.metastore.util.MetaStoreUriNormaliser;
-
 @AllArgsConstructor
+@Log4j2
 public class CloseableThriftHiveMetastoreIfaceClientFactory {
 
   private static final int DEFAULT_CLIENT_FACTORY_RECONNECTION_RETRY = 3;
@@ -66,6 +67,7 @@ public class CloseableThriftHiveMetastoreIfaceClientFactory {
               connectionTimeout, waggleDanceConfiguration.getConfigurationProperties());
     }
     properties.put(ConfVars.METASTOREURIS.varname, uris);
+    log.info(String.format("customer properties are %s ", properties));
     HiveConfFactory confFactory = new HiveConfFactory(Collections.emptyList(), properties);
     return defaultMetaStoreClientFactory
         .newInstance(confFactory.newInstance(), "waggledance-" + name, DEFAULT_CLIENT_FACTORY_RECONNECTION_RETRY,

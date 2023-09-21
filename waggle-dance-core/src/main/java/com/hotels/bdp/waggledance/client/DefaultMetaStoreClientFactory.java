@@ -193,6 +193,14 @@ public class DefaultMetaStoreClientFactory implements MetaStoreClientFactory {
 
     private void genToken() throws Throwable {
       UserGroupInformation currUser = null;
+
+      UserGroupInformation loginUser = UserGroupInformation.getLoginUser();
+      log.info(
+          String.format("currUser is %s, hashcode is %s", currUser, currUser.hashCode()));
+      log.info(
+          String.format("loginUser is %s, hashcode is %s", loginUser, loginUser.hashCode()));
+      log.info(String.format("currUser == loginUser is %s", currUser == loginUser));
+
       if (delegationToken == null && (currUser = UserGroupInformation.getCurrentUser())
               != UserGroupInformation.getLoginUser()) {
 

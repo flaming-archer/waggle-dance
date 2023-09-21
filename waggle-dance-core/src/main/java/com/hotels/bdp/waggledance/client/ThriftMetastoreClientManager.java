@@ -15,12 +15,8 @@
  */
 package com.hotels.bdp.waggledance.client;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.net.URI;
-import java.util.Random;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+import com.hotels.bdp.waggledance.client.compatibility.HiveCompatibleThriftHiveMetastoreIfaceFactory;
+import lombok.extern.log4j.Log4j2;
 
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
@@ -40,9 +36,12 @@ import org.apache.thrift.transport.TFramedTransport;
 import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransport;
 
-import lombok.extern.log4j.Log4j2;
-
-import com.hotels.bdp.waggledance.client.compatibility.HiveCompatibleThriftHiveMetastoreIfaceFactory;
+import java.io.Closeable;
+import java.io.IOException;
+import java.net.URI;
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Log4j2
 class ThriftMetastoreClientManager implements Closeable {
@@ -67,6 +66,18 @@ class ThriftMetastoreClientManager implements Closeable {
       HiveCompatibleThriftHiveMetastoreIfaceFactory hiveCompatibleThriftHiveMetastoreIfaceFactory,
       int connectionTimeout) {
     this.conf = conf;
+    log.info(String.format("hive all properties are %s", conf.getHiveDefaultLocation()));
+    log.info(String.format("conf.getHiveSiteLocation() is  %s", conf.getHiveSiteLocation()));
+    log.info(String.format("conf.getHiveServer2SiteLocation() is %s",
+        conf.getHiveServer2SiteLocation()));
+    log.info(
+        String.format("conf.getMetastoreSiteLocation() is %s", conf.getMetastoreSiteLocation()));
+    try {
+      log.info(String.format("conf.getUser() is %s", conf.getUser()));
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
     this.hiveCompatibleThriftHiveMetastoreIfaceFactory = hiveCompatibleThriftHiveMetastoreIfaceFactory;
     this.connectionTimeout = connectionTimeout;
     msUri = conf.getVar(ConfVars.METASTOREURIS);
