@@ -67,9 +67,13 @@ public class CloseableThriftHiveMetastoreIfaceClientFactory {
               connectionTimeout, waggleDanceConfiguration.getConfigurationProperties());
     }
     properties.put(ConfVars.METASTOREURIS.varname, uris);
+    properties.put("hadoop.security.authentication", "true");
+    properties.put("hive.metastore.sasl.enabled", "true");
+    properties.put("hive.metastore.kerberos.principal", System.getProperty("dtb_wd_conf_principal"));
+    properties.put("hive.metastore.kerberos.keytab.file", System.getProperty("dtb_wd_conf_keytab"));
     log.info(String.format("customer properties are %s ", properties));
-    String res = System.getProperty("dtb_wd_conf_res");
-    HiveConfFactory confFactory = new HiveConfFactory(Collections.singletonList(res), properties);
+
+    HiveConfFactory confFactory = new HiveConfFactory(Collections.emptyList(), properties);
     return defaultMetaStoreClientFactory
         .newInstance(confFactory.newInstance(), "waggledance-" + name, DEFAULT_CLIENT_FACTORY_RECONNECTION_RETRY,
             connectionTimeout);
