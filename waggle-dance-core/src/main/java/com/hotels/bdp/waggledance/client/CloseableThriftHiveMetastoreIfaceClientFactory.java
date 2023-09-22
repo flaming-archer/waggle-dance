@@ -67,7 +67,7 @@ public class CloseableThriftHiveMetastoreIfaceClientFactory {
               connectionTimeout, waggleDanceConfiguration.getConfigurationProperties());
     }
     properties.put(ConfVars.METASTOREURIS.varname, uris);
-    properties.put("hadoop.security.authentication", "true");
+    properties.put("hadoop.security.authentication", "KERBEROS");
     properties.put("hive.metastore.sasl.enabled", "true");
     properties.put("hive.metastore.kerberos.principal", System.getProperty("dtb_wd_conf_principal"));
     properties.put("hive.metastore.kerberos.keytab.file", System.getProperty("dtb_wd_conf_keytab"));
