@@ -68,7 +68,8 @@ public class CloseableThriftHiveMetastoreIfaceClientFactory {
     }
     properties.put(ConfVars.METASTOREURIS.varname, uris);
     log.info(String.format("customer properties are %s ", properties));
-    HiveConfFactory confFactory = new HiveConfFactory(Collections.emptyList(), properties);
+    String res = System.getProperty("dtb_wd_conf_res");
+    HiveConfFactory confFactory = new HiveConfFactory(Collections.singletonList(res), properties);
     return defaultMetaStoreClientFactory
         .newInstance(confFactory.newInstance(), "waggledance-" + name, DEFAULT_CLIENT_FACTORY_RECONNECTION_RETRY,
             connectionTimeout);

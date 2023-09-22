@@ -39,6 +39,8 @@ import org.apache.thrift.transport.TTransport;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
+import java.util.Map.Entry;
+import java.util.Properties;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -66,7 +68,16 @@ class ThriftMetastoreClientManager implements Closeable {
       HiveCompatibleThriftHiveMetastoreIfaceFactory hiveCompatibleThriftHiveMetastoreIfaceFactory,
       int connectionTimeout) {
     this.conf = conf;
-    log.info(String.format("hive all properties are %s", conf.getAllProperties()));
+    msUri = conf.getVar(ConfVars.METASTOREURIS);
+    log.info(
+        String.format("msUri are %s，thread name is ", msUri, Thread.currentThread().getName()));
+
+    Properties properties = conf.getAllProperties();
+    log.info("print hive all properties begin ");
+    for (Entry<Object, Object> entry : properties.entrySet()) {
+      log.info(String.format("hive properties key %s,value %s", entry.getKey(), entry.getValue()));
+    }
+
     log.info(String.format("conf.getHiveSiteLocation() is  %s", conf.getHiveSiteLocation()));
     log.info(String.format("conf.getHiveServer2SiteLocation() is %s",
         conf.getHiveServer2SiteLocation()));
@@ -80,8 +91,7 @@ class ThriftMetastoreClientManager implements Closeable {
 
     this.hiveCompatibleThriftHiveMetastoreIfaceFactory = hiveCompatibleThriftHiveMetastoreIfaceFactory;
     this.connectionTimeout = connectionTimeout;
-    msUri = conf.getVar(ConfVars.METASTOREURIS);
-    log.info(String.format("msUri are %s", msUri));
+
 
     if (HiveConfUtil.isEmbeddedMetaStore(msUri)) {
       throw new RuntimeException("You can't waggle an embedded metastore");
