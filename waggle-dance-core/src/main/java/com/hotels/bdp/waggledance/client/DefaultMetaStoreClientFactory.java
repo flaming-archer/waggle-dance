@@ -192,7 +192,7 @@ public class DefaultMetaStoreClientFactory implements MetaStoreClientFactory {
     }
 
     private void genToken() throws Throwable {
-      UserGroupInformation currUser = null;
+      UserGroupInformation currUser = UserGroupInformation.getCurrentUser();
 
       UserGroupInformation loginUser = UserGroupInformation.getLoginUser();
       log.info(
