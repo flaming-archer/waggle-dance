@@ -66,7 +66,7 @@ class ThriftMetastoreClientManager implements Closeable {
       HiveCompatibleThriftHiveMetastoreIfaceFactory hiveCompatibleThriftHiveMetastoreIfaceFactory,
       int connectionTimeout) {
     this.conf = conf;
-    log.info(String.format("hive all properties are %s", conf.getHiveDefaultLocation()));
+    log.info(String.format("hive all properties are %s", conf.getAllProperties()));
     log.info(String.format("conf.getHiveSiteLocation() is  %s", conf.getHiveSiteLocation()));
     log.info(String.format("conf.getHiveServer2SiteLocation() is %s",
         conf.getHiveServer2SiteLocation()));
