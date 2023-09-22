@@ -81,6 +81,7 @@ class ThriftMetastoreClientManager implements Closeable {
     this.hiveCompatibleThriftHiveMetastoreIfaceFactory = hiveCompatibleThriftHiveMetastoreIfaceFactory;
     this.connectionTimeout = connectionTimeout;
     msUri = conf.getVar(ConfVars.METASTOREURIS);
+    log.info(String.format("msUri are %s", msUri));
 
     if (HiveConfUtil.isEmbeddedMetaStore(msUri)) {
       throw new RuntimeException("You can't waggle an embedded metastore");
