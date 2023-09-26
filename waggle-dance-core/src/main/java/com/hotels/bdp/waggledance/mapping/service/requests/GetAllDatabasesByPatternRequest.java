@@ -15,18 +15,19 @@
  */
 package com.hotels.bdp.waggledance.mapping.service.requests;
 
+import com.hotels.bdp.waggledance.mapping.model.DatabaseMapping;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.extern.log4j.Log4j2;
+
+import org.apache.thrift.TException;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
 
-import org.apache.thrift.TException;
-
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-
-import com.hotels.bdp.waggledance.mapping.model.DatabaseMapping;
-
 @AllArgsConstructor
+@Log4j2
 public class GetAllDatabasesByPatternRequest implements RequestCallable<List<String>> {
 
   @Getter
@@ -37,12 +38,15 @@ public class GetAllDatabasesByPatternRequest implements RequestCallable<List<Str
   @Override
   public List<String> call() throws TException {
     List<String> databases = mapping.getClient().get_databases(pattern);
+    log.info("pattern is " + pattern);
+    log.info("mapping.getClient() is " + mapping.getClient());
     List<String> mappedDatabases = new ArrayList<>();
     for (String database : databases) {
       if (filter.apply(database, mapping)) {
         mappedDatabases.addAll(mapping.transformOutboundDatabaseNameMultiple(database));
       }
     }
+    log.info("filter result  are " + mappedDatabases);
     return mappedDatabases;
   }
 }
