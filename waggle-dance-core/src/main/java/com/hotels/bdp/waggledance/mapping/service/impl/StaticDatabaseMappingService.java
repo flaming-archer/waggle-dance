@@ -85,9 +85,6 @@ public class StaticDatabaseMappingService implements MappingEventListener {
     mappingsByDatabaseName = Collections.synchronizedMap(new LinkedHashMap<>());
     databaseMappingToDatabaseList = new ConcurrentHashMap<>();
     databaseToTableAllowList = new ConcurrentHashMap<>();
-    for (AbstractMetaStore federatedMetaStore : initialMetastores) {
-      add(federatedMetaStore);
-    }
 
     primaryDatabasesCache = CacheBuilder
         .newBuilder()
@@ -109,6 +106,10 @@ public class StaticDatabaseMappingService implements MappingEventListener {
             }
           }
         });
+
+    for (AbstractMetaStore federatedMetaStore : initialMetastores) {
+      add(federatedMetaStore);
+    }
   }
 
   private void add(AbstractMetaStore metaStore) {
