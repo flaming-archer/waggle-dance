@@ -81,6 +81,14 @@ public class StaticDatabaseMappingService implements MappingEventListener {
       QueryMapping queryMapping) {
     this.metaStoreMappingFactory = metaStoreMappingFactory;
     this.queryMapping = queryMapping;
+    mappingsByMetaStoreName = Collections.synchronizedMap(new LinkedHashMap<>());
+    mappingsByDatabaseName = Collections.synchronizedMap(new LinkedHashMap<>());
+    databaseMappingToDatabaseList = new ConcurrentHashMap<>();
+    databaseToTableAllowList = new ConcurrentHashMap<>();
+    for (AbstractMetaStore federatedMetaStore : initialMetastores) {
+      add(federatedMetaStore);
+    }
+
     primaryDatabasesCache = CacheBuilder
         .newBuilder()
         .expireAfterAccess(1, TimeUnit.MINUTES)
@@ -92,22 +100,15 @@ public class StaticDatabaseMappingService implements MappingEventListener {
             if (primaryDatabaseMapping != null) {
               log.info("primaryDatabaseMapping getMetastoreMappingName is "
                   + primaryDatabaseMapping.getMetastoreMappingName());
-              List<String> databases = primaryDatabaseMapping.getClient().get_all_databases();
-              log.info("primaryDatabaseMapping.getClient().get_all_databases() is " + databases);
-              return primaryDatabaseMapping.getClient().get_all_databases();
+              List<String> databases = new StaticDatabaseMappingPanopticOperationHandler()
+                  .getPrimaryAllDatabases();
+              log.info("getPanopticOperationHandler().getPrimaryAllDatabases() are " + databases);
+              return databases;
             } else {
               return Lists.newArrayList();
             }
           }
         });
-
-    mappingsByMetaStoreName = Collections.synchronizedMap(new LinkedHashMap<>());
-    mappingsByDatabaseName = Collections.synchronizedMap(new LinkedHashMap<>());
-    databaseMappingToDatabaseList = new ConcurrentHashMap<>();
-    databaseToTableAllowList = new ConcurrentHashMap<>();
-    for (AbstractMetaStore federatedMetaStore : initialMetastores) {
-      add(federatedMetaStore);
-    }
   }
 
   private void add(AbstractMetaStore metaStore) {
@@ -363,47 +364,64 @@ public class StaticDatabaseMappingService implements MappingEventListener {
 
   @Override
   public PanopticOperationHandler getPanopticOperationHandler() {
-    return new PanopticOperationHandler() {
+    return new StaticDatabaseMappingPanopticOperationHandler();
+  }
 
-      @Override
-      public List<TableMeta> getTableMeta(String db_patterns, String tbl_patterns, List<String> tbl_types) {
+  class StaticDatabaseMappingPanopticOperationHandler extends PanopticOperationHandler {
 
-        BiFunction<TableMeta, DatabaseMapping, Boolean> filter = (tableMeta, mapping) ->
-            databaseAndTableAllowed(tableMeta.getDbName(), tableMeta.getTableName(), mapping);
+    @Override
+    public List<TableMeta> getTableMeta(String db_patterns, String tbl_patterns,
+        List<String> tbl_types) {
 
-        Map<DatabaseMapping, String> mappingsForPattern = new LinkedHashMap<>();
-        for (DatabaseMapping mapping : getAvailableDatabaseMappings()) {
-          mappingsForPattern.put(mapping, db_patterns);
-        }
-        return super.getTableMeta(tbl_patterns, tbl_types, mappingsForPattern, filter);
+      BiFunction<TableMeta, DatabaseMapping, Boolean> filter = (tableMeta, mapping) ->
+          databaseAndTableAllowed(tableMeta.getDbName(), tableMeta.getTableName(), mapping);
+
+      Map<DatabaseMapping, String> mappingsForPattern = new LinkedHashMap<>();
+      for (DatabaseMapping mapping : getAvailableDatabaseMappings()) {
+        mappingsForPattern.put(mapping, db_patterns);
+      }
+      return super.getTableMeta(tbl_patterns, tbl_types, mappingsForPattern, filter);
+    }
+
+    @Override
+    public List<String> getAllDatabases(String pattern) {
+      BiFunction<String, DatabaseMapping, Boolean> filter = getFilter();
+
+      Map<DatabaseMapping, String> mappingsForPattern = new LinkedHashMap<>();
+      for (DatabaseMapping mapping : getAllDatabaseMappings()) {
+        mappingsForPattern.put(mapping, pattern);
       }
 
-      @Override
-      public List<String> getAllDatabases(String pattern) {
-        BiFunction<String, DatabaseMapping, Boolean> filter = (database, mapping) -> mappingsByDatabaseName
-            .containsKey(database);
+      return super.getAllDatabases(mappingsForPattern, filter);
+    }
 
-        BiFunction<String, DatabaseMapping, Boolean> filter1 = (database, mapping) -> filter.apply(database, mapping)
-                && databaseMappingToDatabaseList.get(mapping.getMetastoreMappingName()).contains(database);
+    private BiFunction<String, DatabaseMapping, Boolean> getFilter() {
+      BiFunction<String, DatabaseMapping, Boolean> filter =
+          (database, mapping) -> mappingsByDatabaseName.containsKey(database);
 
-        Map<DatabaseMapping, String> mappingsForPattern = new LinkedHashMap<>();
-        for (DatabaseMapping mapping : getAllDatabaseMappings()) {
-          mappingsForPattern.put(mapping, pattern);
-        }
+      return (database, mapping) -> filter.apply(database, mapping)
+          && databaseMappingToDatabaseList.get(mapping.getMetastoreMappingName())
+          .contains(database);
+    }
 
-        return super.getAllDatabases(mappingsForPattern, filter1);
-      }
+    @Override
+    public List<String> getAllDatabases() {
+      return new ArrayList<>(mappingsByDatabaseName.keySet());
+    }
 
-      @Override
-      public List<String> getAllDatabases() {
-        return new ArrayList<>(mappingsByDatabaseName.keySet());
-      }
+    public List<String> getPrimaryAllDatabases() {
+      BiFunction<String, DatabaseMapping, Boolean> filter = getFilter();
 
-      @Override
-      protected PanopticOperationExecutor getPanopticOperationExecutor() {
-        return new PanopticConcurrentOperationExecutor();
-      }
-    };
+      Map<DatabaseMapping, String> mappingsForPattern = new LinkedHashMap<>();
+      mappingsForPattern.put(primaryDatabaseMapping, "*");
+
+      return super.getAllDatabases(mappingsForPattern, filter);
+    }
+
+    @Override
+    protected PanopticOperationExecutor getPanopticOperationExecutor() {
+      return new PanopticConcurrentOperationExecutor();
+    }
   }
 
   @Override
