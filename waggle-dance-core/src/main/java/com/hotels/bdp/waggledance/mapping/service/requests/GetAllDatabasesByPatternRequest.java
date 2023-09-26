@@ -40,6 +40,8 @@ public class GetAllDatabasesByPatternRequest implements RequestCallable<List<Str
     List<String> databases = mapping.getClient().get_databases(pattern);
     log.info("pattern is " + pattern);
     log.info("mapping.getClient() is " + mapping.getClient());
+    log.info("MetastoreMappingName is " + mapping.getMetastoreMappingName());
+
     List<String> mappedDatabases = new ArrayList<>();
     for (String database : databases) {
       if (filter.apply(database, mapping)) {
