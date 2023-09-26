@@ -113,23 +113,33 @@ public class StaticDatabaseMappingService implements MappingEventListener {
   }
 
   private void add(AbstractMetaStore metaStore) {
+    log.info("add AbstractMetaStore now {}", metaStore.getName());
     MetaStoreMapping metaStoreMapping = metaStoreMappingFactory.newInstance(metaStore);
 
     List<String> mappableDatabases = Collections.emptyList();
     if (metaStoreMapping.isAvailable()) {
       try {
         List<String> allDatabases = metaStoreMapping.getClient().get_all_databases();
+        log.info("query from hms databases are {},metaStore name are {}", allDatabases,
+            metaStore.getName());
+
         AllowList allowedDatabases = new AllowList(metaStore.getMappedDatabases());
         mappableDatabases = applyAllowList(allDatabases, allowedDatabases);
+        log.info("after applyAllowList allDatabases are {},metaStore name are {}", mappableDatabases,
+            metaStore.getName());
       } catch (TException e) {
         log.error("Could not get databases for metastore {}", metaStore.getRemoteMetaStoreUris(), e);
       }
+    }else{
+      log.info("metaStore is not available {}", metaStore.getName());
     }
     DatabaseMapping databaseMapping = createDatabaseMapping(metaStoreMapping);
     mappableDatabases = mappableDatabases
         .stream()
         .flatMap(n -> databaseMapping.transformOutboundDatabaseNameMultiple(n).stream())
         .collect(toList());
+    log.info("mappableDatabases are {}",mappableDatabases);
+
     validateMappableDatabases(mappableDatabases, metaStore);
 
     if (metaStore.getFederationType() == PRIMARY) {
@@ -407,7 +417,9 @@ public class StaticDatabaseMappingService implements MappingEventListener {
 
     @Override
     public List<String> getAllDatabases() {
-      return new ArrayList<>(mappingsByDatabaseName.keySet());
+      log.info("getAllDatabases {}", mappingsByDatabaseName.keySet());
+      List<String> res = new ArrayList<>(mappingsByDatabaseName.keySet());
+      return res;
     }
 
     public List<String> getPrimaryAllDatabases() {
