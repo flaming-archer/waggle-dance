@@ -219,6 +219,8 @@ public class StaticDatabaseMappingService implements MappingEventListener {
 
   private void addDatabaseMappings(List<String> databases, DatabaseMapping databaseMapping) {
     for (String databaseName : databases) {
+      log.info("addDatabaseMappings databaseName:{},databaseMapping: {}", databaseName,
+          databaseMapping);
       mappingsByDatabaseName.put(databaseName, databaseMapping);
     }
   }
@@ -362,6 +364,7 @@ public class StaticDatabaseMappingService implements MappingEventListener {
 
   @Override
   public List<DatabaseMapping> getAllDatabaseMappings() {
+    log.info("getAllDatabaseMappings {}", mappingsByMetaStoreName.values());
     return new ArrayList<>(mappingsByMetaStoreName.values());
   }
 
