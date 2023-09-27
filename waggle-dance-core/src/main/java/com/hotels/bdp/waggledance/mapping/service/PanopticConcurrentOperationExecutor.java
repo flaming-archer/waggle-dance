@@ -75,7 +75,7 @@ public class PanopticConcurrentOperationExecutor implements PanopticOperationExe
     } catch (InterruptedException e) {
       log.warn(INTERRUPTED_MESSAGE, e);
     } catch (ExecutionException e) {
-      log.warn(errorMessage, e.getCause().getMessage());
+      log.error(errorMessage, e);
     } catch (CancellationException e) {
       log.warn(SLOW_METASTORE_MESSAGE, metastoreMappingName);
     }
