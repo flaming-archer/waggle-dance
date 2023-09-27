@@ -403,6 +403,12 @@ public class StaticDatabaseMappingService implements MappingEventListener {
 
       Map<DatabaseMapping, String> mappingsForPattern = new LinkedHashMap<>();
       for (DatabaseMapping mapping : getAllDatabaseMappings()) {
+        try {
+          log.info("getAllDatabases mapping.getMetastoreMappingName is {},{} ",
+              mapping.getMetastoreMappingName(),mapping.getClient().getName());
+        } catch (TException e) {
+          e.printStackTrace();
+        }
         mappingsForPattern.put(mapping, pattern);
       }
 

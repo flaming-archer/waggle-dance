@@ -53,6 +53,7 @@ public class PanopticConcurrentOperationExecutor implements PanopticOperationExe
 
       try {
         long totalTimeout = getTotalTimeout(requestTimeout, allRequests);
+        log.info("totalTimeout:{},futures size:{}", totalTimeout, futures.size());
         futures = executorService.invokeAll(allRequests, totalTimeout, TimeUnit.MILLISECONDS);
       } catch (InterruptedException e) {
         log.warn("Execution was interrupted", e);
@@ -75,6 +76,7 @@ public class PanopticConcurrentOperationExecutor implements PanopticOperationExe
     } catch (InterruptedException e) {
       log.warn(INTERRUPTED_MESSAGE, e);
     } catch (ExecutionException e) {
+      log.warn("metastoreMappingName {} executionException", metastoreMappingName);
       log.error(errorMessage, e);
     } catch (CancellationException e) {
       log.warn(SLOW_METASTORE_MESSAGE, metastoreMappingName);
