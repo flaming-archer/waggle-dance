@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
@@ -44,8 +45,17 @@ public class CloseableThriftHiveMetastoreIfaceClientFactory {
 
   public CloseableThriftHiveMetastoreIface newInstance(AbstractMetaStore metaStore) {
     Map<String, String> properties = new HashMap<>();
-    if (waggleDanceConfiguration.getConfigurationProperties() != null) {
-      properties.putAll(waggleDanceConfiguration.getConfigurationProperties());
+    Map<String, String> configurationProperties = waggleDanceConfiguration.getConfigurationProperties();
+    if (configurationProperties == null) {
+      return newHiveInstance(metaStore, properties);
+    }
+    String metaStoreNamePrefix = metaStore.getName() + ".";
+    for (Entry<String, String> entry : configurationProperties.entrySet()) {
+      if (entry.getKey().startsWith(metaStoreNamePrefix)) {
+        properties.put(entry.getKey().substring(metaStoreNamePrefix.length()), entry.getValue());
+      } else {
+        properties.put(entry.getKey(), entry.getValue());
+      }
     }
     return newHiveInstance(metaStore, properties);
   }
