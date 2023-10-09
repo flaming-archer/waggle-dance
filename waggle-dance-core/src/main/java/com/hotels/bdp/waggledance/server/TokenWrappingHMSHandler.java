@@ -82,7 +82,8 @@ public class TokenWrappingHMSHandler implements InvocationHandler {
 
               String shortName = currUser.getShortUserName();
               token = baseHandler.get_delegation_token(shortName, shortName);
-              log.info(String.format("get delegation token by user %s", shortName));
+              log.info("get delegation token by user {}, token size is {}", shortName,
+                  token == null ? 0 : token.length());
               tokens.set(token);
             }
             return method.invoke(baseHandler, args);

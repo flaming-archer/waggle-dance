@@ -198,6 +198,7 @@ public class DefaultMetaStoreClientFactory implements MetaStoreClientFactory {
 
         log.info(String.format("set %s delegation token", currUser.getShortUserName()));
         String token = TokenWrappingHMSHandler.getToken();
+        log.info("set token size is {}", token == null ? 0 : token.length());
         setTokenStr2Ugi(currUser, token);
         delegationToken = token;
         clientManager.close();

@@ -15,16 +15,17 @@
  */
 package com.hotels.bdp.waggledance.mapping.service.requests;
 
-import com.hotels.bdp.waggledance.mapping.model.DatabaseMapping;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.BiFunction;
+
+import org.apache.thrift.TException;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 
-import org.apache.thrift.TException;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.BiFunction;
+import com.hotels.bdp.waggledance.mapping.model.DatabaseMapping;
 
 @AllArgsConstructor
 @Log4j2
