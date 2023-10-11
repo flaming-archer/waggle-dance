@@ -138,12 +138,16 @@ class ThriftMetastoreClientManager implements Closeable {
               String tokenSig = conf.getVar(ConfVars.METASTORE_TOKEN_SIGNATURE);
               // tokenSig could be null
               String tokenStrForm = SecurityUtils.getTokenStrForm(tokenSig);
+              log.debug("tokenSig is {},tokenStrForm sample is {}", tokenSig,
+                  tokenStrForm == null ? "" : tokenStrForm.hashCode());
               if (tokenStrForm != null) {
                 // authenticate using delegation tokens via the "DIGEST" mechanism
+                log.debug("use krb");
                 transport = KerberosSaslHelper
                         .getTokenTransport(tokenStrForm, store.getHost(), transport,
                                 MetaStoreUtils.getMetaStoreSaslProperties(conf, useSsl));
               } else {
+                log.debug("use principalConfig");
                 String principalConfig = conf.getVar(ConfVars.METASTORE_KERBEROS_PRINCIPAL);
                 transport = KerberosSaslHelper
                         .getKerberosTransport(principalConfig, store.getHost(), transport,
