@@ -33,6 +33,8 @@ import com.hotels.bdp.waggledance.mapping.service.impl.LowerCasePrefixNamingStra
 @org.springframework.context.annotation.Configuration
 public class CommonBeans {
 
+  public static final String WD_HMS = "wdhms";
+
   @Bean
   public HiveConf hiveConf(WaggleDanceConfiguration waggleDanceConfiguration) {
     Map<String, String> confProps = waggleDanceConfiguration.getConfigurationProperties();

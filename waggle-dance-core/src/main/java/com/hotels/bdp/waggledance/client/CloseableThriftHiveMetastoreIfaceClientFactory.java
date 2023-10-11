@@ -31,6 +31,7 @@ import lombok.AllArgsConstructor;
 import com.hotels.bdp.waggledance.api.model.AbstractMetaStore;
 import com.hotels.bdp.waggledance.client.tunnelling.TunnelingMetaStoreClientFactory;
 import com.hotels.bdp.waggledance.conf.WaggleDanceConfiguration;
+import com.hotels.bdp.waggledance.context.CommonBeans;
 import com.hotels.hcommon.hive.metastore.conf.HiveConfFactory;
 import com.hotels.hcommon.hive.metastore.util.MetaStoreUriNormaliser;
 
@@ -49,10 +50,13 @@ public class CloseableThriftHiveMetastoreIfaceClientFactory {
     if (configurationProperties == null) {
       return newHiveInstance(metaStore, properties);
     }
-    String metaStoreNamePrefix = metaStore.getName() + ".";
+    String commonBeansPrefix = CommonBeans.WD_HMS + ".";
+    String metaStoreNamePrefix = commonBeansPrefix + metaStore.getName() + ".";
     for (Entry<String, String> entry : configurationProperties.entrySet()) {
       if (entry.getKey().startsWith(metaStoreNamePrefix)) {
         properties.put(entry.getKey().substring(metaStoreNamePrefix.length()), entry.getValue());
+      } else if (entry.getKey().startsWith(commonBeansPrefix)) {
+        continue;
       } else {
         properties.put(entry.getKey(), entry.getValue());
       }
