@@ -26,6 +26,7 @@ import java.util.List;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.utils.SecurityUtils;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.thrift.TException;
 import org.apache.thrift.transport.TTransportException;
 
 import lombok.extern.log4j.Log4j2;
@@ -206,6 +207,13 @@ public class DefaultMetaStoreClientFactory implements MetaStoreClientFactory {
     }
 
     private void setTokenStr2Ugi(UserGroupInformation currUser, String token) throws IOException {
+      try {
+        log.debug(
+            "set client dtg :" + clientManager.getClient().toString() + clientManager.getClient()
+                .getName() + "");
+      } catch (TException e) {
+        e.printStackTrace();
+      }
       String newTokenSignature = clientManager.generateNewTokenSignature(tokenSignature);
       SecurityUtils.setTokenStr(currUser, token, newTokenSignature);
     }

@@ -140,7 +140,7 @@ class ThriftMetastoreClientManager implements Closeable {
               String tokenStrForm = SecurityUtils.getTokenStrForm(tokenSig);
               log.debug("tokenSig is {},tokenStrForm sample is {}", tokenSig,
                   tokenStrForm == null ? "" : tokenStrForm.hashCode());
-              if (tokenStrForm != null) {
+              if (tokenStrForm != null && !tokenSig.equalsIgnoreCase("WAGGLEDANCETOKEN2")) {
                 // authenticate using delegation tokens via the "DIGEST" mechanism
                 log.debug("use krb");
                 transport = KerberosSaslHelper
