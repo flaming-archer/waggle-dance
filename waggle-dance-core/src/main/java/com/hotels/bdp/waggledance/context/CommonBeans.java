@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016-2023 Expedia, Inc.
+ * Copyright (C) 2016-2024 Expedia, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ import com.hotels.bdp.waggledance.mapping.service.impl.LowerCasePrefixNamingStra
 @org.springframework.context.annotation.Configuration
 public class CommonBeans {
 
-  public static final String WD_HMS = "wdhms";
+  public static final String WD_HMS = "wd-metastore";
 
   @Bean
   public HiveConf hiveConf(WaggleDanceConfiguration waggleDanceConfiguration) {

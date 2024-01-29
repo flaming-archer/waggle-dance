@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016-2023 Expedia, Inc.
+ * Copyright (C) 2016-2024 Expedia, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -193,8 +193,11 @@ public class DefaultMetaStoreClientFactory implements MetaStoreClientFactory {
 
     private void genToken() throws Throwable {
       UserGroupInformation currUser = null;
+      currUser = UserGroupInformation.getCurrentUser();
+      UserGroupInformation loginUser =  UserGroupInformation.getLoginUser();
+      log.debug("currUser is {},loginUser is {}",currUser,loginUser);
       if (delegationToken == null && (currUser = UserGroupInformation.getCurrentUser())
-              != UserGroupInformation.getLoginUser()) {
+          != UserGroupInformation.getLoginUser()) {
 
         log.info("set {} delegation token", currUser.getShortUserName());
         String token = TokenWrappingHMSHandler.getToken();

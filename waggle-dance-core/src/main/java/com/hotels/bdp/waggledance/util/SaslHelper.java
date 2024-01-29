@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016-2023 Expedia, Inc.
+ * Copyright (C) 2016-2024 Expedia, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,8 +38,10 @@ import org.apache.thrift.transport.TTransportFactory;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
+@Log4j2
 public final class SaslHelper {
 
   public static HadoopThriftAuthBridge.Server createSaslServer(HiveConf conf) throws TTransportException {
@@ -56,6 +58,8 @@ public final class SaslHelper {
       try {
         Object baseHandler = null;
         String tokenStoreClass = conf.getVar(HiveConf.ConfVars.METASTORE_CLUSTER_DELEGATION_TOKEN_STORE_CLS);
+
+        log.debug("tokenStoreClass is {}", tokenStoreClass);
 
         if (tokenStoreClass.equals(DBTokenStore.class.getName())) {
           // IMetaStoreClient is needed to access token store if DBTokenStore is to be used. It

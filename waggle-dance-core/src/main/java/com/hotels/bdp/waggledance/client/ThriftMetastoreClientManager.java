@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016-2023 Expedia, Inc.
+ * Copyright (C) 2016-2024 Expedia, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -142,12 +142,12 @@ class ThriftMetastoreClientManager implements Closeable {
                   tokenStrForm == null ? "" : tokenStrForm.hashCode());
               if (tokenStrForm != null) {
                 // authenticate using delegation tokens via the "DIGEST" mechanism
-                log.debug("use krb");
+                log.debug("use DIGEST");
                 transport = KerberosSaslHelper
                         .getTokenTransport(tokenStrForm, store.getHost(), transport,
                                 MetaStoreUtils.getMetaStoreSaslProperties(conf, useSsl));
               } else {
-                log.debug("use principalConfig");
+                log.debug("use kerb principalConfig");
                 String principalConfig = conf.getVar(ConfVars.METASTORE_KERBEROS_PRINCIPAL);
                 transport = KerberosSaslHelper
                         .getKerberosTransport(principalConfig, store.getHost(), transport,
