@@ -80,8 +80,7 @@ public class TokenWrappingHMSHandler implements InvocationHandler {
             currUser = UserGroupInformation.getCurrentUser();
             UserGroupInformation loginUser =  UserGroupInformation.getLoginUser();
             log.debug("currUser is {},loginUser is {}",currUser,loginUser);
-            if (tokens.get().isEmpty() && (currUser = UserGroupInformation.getCurrentUser())
-                    != UserGroupInformation.getLoginUser()) {
+            if (tokens.get().isEmpty()) {
 
               String shortName = currUser.getShortUserName();
               token = baseHandler.get_delegation_token(shortName, shortName);
