@@ -23,7 +23,9 @@ import java.lang.reflect.Proxy;
 import java.lang.reflect.UndeclaredThrowableException;
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
+import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.hadoop.hive.metastore.utils.SecurityUtils;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.thrift.transport.TTransportException;
@@ -34,7 +36,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 
 import com.hotels.bdp.waggledance.client.compatibility.HiveCompatibleThriftHiveMetastoreIfaceFactory;
-import com.hotels.bdp.waggledance.server.TokenWrappingHMSHandler;
+import com.hotels.bdp.waggledance.util.DlgHelper;
 import com.hotels.hcommon.hive.metastore.exception.MetastoreUnavailableException;
 
 
@@ -146,21 +148,25 @@ public class DefaultMetaStoreClientFactory implements MetaStoreClientFactory {
     private final CloseableThriftHiveMetastoreIface baseHandler;
     private final ThriftMetastoreClientManager clientManager;
     private final String tokenSignature = "WAGGLEDANCETOKEN";
-
+    private final String name;
     private String delegationToken;
 
     public static CloseableThriftHiveMetastoreIface newProxyInstance(
             CloseableThriftHiveMetastoreIface baseHandler,
-            ThriftMetastoreClientManager clientManager) {
-      return (CloseableThriftHiveMetastoreIface) Proxy.newProxyInstance(SaslMetastoreClientHander.class.getClassLoader(),
-              INTERFACES, new SaslMetastoreClientHander(baseHandler, clientManager));
+            ThriftMetastoreClientManager clientManager,
+            String name) {
+      return (CloseableThriftHiveMetastoreIface) Proxy.newProxyInstance(
+          SaslMetastoreClientHander.class.getClassLoader(),
+          INTERFACES, new SaslMetastoreClientHander(baseHandler, clientManager, name));
     }
 
     private SaslMetastoreClientHander(
             CloseableThriftHiveMetastoreIface handler,
-            ThriftMetastoreClientManager clientManager) {
+            ThriftMetastoreClientManager clientManager,
+            String name) {
       this.baseHandler = handler;
       this.clientManager = clientManager;
+      this.name = name;
     }
 
     @SuppressWarnings("unchecked")
@@ -181,7 +187,7 @@ public class DefaultMetaStoreClientFactory implements MetaStoreClientFactory {
               throw new MetastoreUnavailableException("Couldn't setup delegation token in the ugi: ", e);
             }
           default:
-            genToken();
+            genToken(proxy);
             return method.invoke(baseHandler, args);
         }
       } catch (InvocationTargetException e) {
@@ -191,27 +197,45 @@ public class DefaultMetaStoreClientFactory implements MetaStoreClientFactory {
       }
     }
 
-    private void genToken() throws Throwable {
+    private void genToken(Object proxy) throws Throwable {
       UserGroupInformation currUser = null;
       currUser = UserGroupInformation.getCurrentUser();
-      UserGroupInformation loginUser =  UserGroupInformation.getLoginUser();
-      log.debug("currUser is {},loginUser is {}",currUser,loginUser);
-      if (delegationToken == null) {
+      UserGroupInformation loginUser = UserGroupInformation.getLoginUser();
+      log.debug("currUser is {},loginUser is {}", currUser, loginUser);
+      //      String token = TokenWrappingHMSHandler.getToken(name);
+      //TODO delegationToken should renewable , maybe  conside login user  != current user
+      String tokenSig = clientManager.getHiveConfValue(ConfVars.METASTORE_TOKEN_SIGNATURE.varname,
+          "");
+      // tokenSig could be null
+      String tokenStrForm = DlgHelper.getToken(tokenSig);
+
+
+      if (delegationToken == null && StringUtils.isEmpty(tokenStrForm)) {
 
         log.info("set {} delegation token", currUser.getShortUserName());
-        String token = TokenWrappingHMSHandler.getToken();
-        setTokenStr2Ugi(currUser, token);
-        delegationToken = token;
+
+        clientManager.open();
+        CloseableThriftHiveMetastoreIface baseHandler = (CloseableThriftHiveMetastoreIface) proxy;
+        String shortName = currUser.getShortUserName();
+        String token = baseHandler.get_delegation_token(shortName, shortName);
+        this.delegationToken = token;
         clientManager.close();
+        setTokenStr2Ugi(UserGroupInformation.getCurrentUser(), token);
+        clientManager.open();
+
+      } else if (delegationToken == null && !StringUtils.isEmpty(tokenStrForm)) {
+        this.delegationToken = tokenStrForm;
       }
     }
 
     private void setTokenStr2Ugi(UserGroupInformation currUser, String token) throws IOException {
       String newTokenSignature = clientManager.generateNewTokenSignature(tokenSignature);
+      log.info("set {} delegate token for sig,value is {},user is {}", newTokenSignature, token,
+          currUser);
       SecurityUtils.setTokenStr(currUser, token, newTokenSignature);
+      DlgHelper.addToken(newTokenSignature, token);
     }
   }
-
   /*
    * (non-Javadoc)
    * @see com.hotels.bdp.waggledance.client.MetaStoreClientFactoryI#newInstance(org.apache.hadoop.hive.conf.HiveConf,
@@ -238,7 +262,7 @@ public class DefaultMetaStoreClientFactory implements MetaStoreClientFactory {
       CloseableThriftHiveMetastoreIface ifaceReconnectingHandler = (CloseableThriftHiveMetastoreIface) Proxy
               .newProxyInstance(getClass().getClassLoader(), INTERFACES, reconnectingHandler);
       // wrapping the SaslMetastoreClientHander to handle delegation token if using sasl
-      return SaslMetastoreClientHander.newProxyInstance(ifaceReconnectingHandler, base);
+      return SaslMetastoreClientHander.newProxyInstance(ifaceReconnectingHandler, base, name);
     } else {
       return (CloseableThriftHiveMetastoreIface) Proxy
               .newProxyInstance(getClass().getClassLoader(), INTERFACES, reconnectingHandler);

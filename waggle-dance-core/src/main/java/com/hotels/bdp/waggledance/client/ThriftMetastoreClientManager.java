@@ -28,7 +28,6 @@ import org.apache.hadoop.hive.conf.HiveConfUtil;
 import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.metastore.api.ThriftHiveMetastore;
 import org.apache.hadoop.hive.metastore.utils.MetaStoreUtils;
-import org.apache.hadoop.hive.metastore.utils.SecurityUtils;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.hive.service.auth.KerberosSaslHelper;
@@ -43,6 +42,7 @@ import org.apache.thrift.transport.TTransport;
 import lombok.extern.log4j.Log4j2;
 
 import com.hotels.bdp.waggledance.client.compatibility.HiveCompatibleThriftHiveMetastoreIfaceFactory;
+import com.hotels.bdp.waggledance.util.DlgHelper;
 
 @Log4j2
 class ThriftMetastoreClientManager implements Closeable {
@@ -137,9 +137,9 @@ class ThriftMetastoreClientManager implements Closeable {
               // submission.
               String tokenSig = conf.getVar(ConfVars.METASTORE_TOKEN_SIGNATURE);
               // tokenSig could be null
-              String tokenStrForm = SecurityUtils.getTokenStrForm(tokenSig);
-              log.debug("tokenSig is {},tokenStrForm sample is {}", tokenSig,
-                  tokenStrForm == null ? "" : tokenStrForm.hashCode());
+              String tokenStrForm = DlgHelper.getToken(tokenSig);
+              log.debug("tokenSig is {},tokenStrForm is {}", tokenSig,
+                  tokenStrForm == null ? "" : tokenStrForm);
               if (tokenStrForm != null) {
                 // authenticate using delegation tokens via the "DIGEST" mechanism
                 log.debug("use DIGEST");
@@ -188,7 +188,7 @@ class ThriftMetastoreClientManager implements Closeable {
               log.warn("Failed to connect to the MetaStore Server, URI " + store, e);
             } else {
               // Don't print full exception trace if DEBUG is not on.
-              log.warn("Failed to connect to the MetaStore Server, URI {}", store);
+              log.warn("Failed to connect to the MetaStore Server, URI {}", store, e);
             }
           }
         } catch (MetaException e) {

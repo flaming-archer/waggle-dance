@@ -32,20 +32,22 @@ public class TokenWrappingHMSHandler implements InvocationHandler {
   private final IHMSHandler baseHandler;
   private final Boolean useSasl;
 
-  private static final ThreadLocal<String> tokens = new ThreadLocal<String>() {
-    @Override
-    protected String initialValue() {
-      return "";
-    }
-  };
+//  private static final ThreadLocal<String> tokens = new ThreadLocal<String>() {
+//    @Override
+//    protected String initialValue() {
+//      return "";
+//    }
+//  };
 
-  public static String getToken() {
-    return tokens.get();
-  }
-
-  public static void removeToken() {
-    tokens.remove();
-  }
+//  public static String getToken(String msName) {
+//    return msToDlg.get(msName);
+//  }
+//
+//  public static void removeToken() {
+//    msToDlg.clear();
+//  }
+//
+//  private static final Map<String, String> msToDlg = new ConcurrentHashMap<>();
 
   public static IHMSHandler newProxyInstance(IHMSHandler baseHandler, boolean useSasl) {
     return (IHMSHandler) Proxy.newProxyInstance(TokenWrappingHMSHandler.class.getClassLoader(),
@@ -71,22 +73,23 @@ public class TokenWrappingHMSHandler implements InvocationHandler {
         switch (method.getName()) {
           case "get_delegation_token":
             token = (String) method.invoke(baseHandler, args);
-            tokens.set(token);
+//            tokens.set(token);
             return token;
           case "close":
-            tokens.remove();
+//            tokens.remove();
             return method.invoke(baseHandler, args);
           default:
             currUser = UserGroupInformation.getCurrentUser();
             UserGroupInformation loginUser =  UserGroupInformation.getLoginUser();
             log.debug("currUser is {},loginUser is {}",currUser,loginUser);
-            if (tokens.get().isEmpty()) {
+//            if (tokens.get().isEmpty() && (currUser = UserGroupInformation.getCurrentUser())
+//                != UserGroupInformation.getLoginUser()) {
 
               String shortName = currUser.getShortUserName();
               token = baseHandler.get_delegation_token(shortName, shortName);
               log.info("get delegation token by user {}", shortName);
-              tokens.set(token);
-            }
+//              tokens.set(token);
+//            }
             return method.invoke(baseHandler, args);
         }
       }

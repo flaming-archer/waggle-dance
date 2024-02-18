@@ -205,7 +205,7 @@ public class MetaStoreProxyServer implements ApplicationRunner {
 
           @Override
           public void deleteContext(ServerContext serverContext, TProtocol tProtocol, TProtocol tProtocol1) {
-            TokenWrappingHMSHandler.removeToken();
+//            TokenWrappingHMSHandler.removeToken();
           }
 
           @Override
