@@ -48,6 +48,7 @@ public class CloseableThriftHiveMetastoreIfaceClientFactory {
     if (waggleDanceConfiguration.getConfigurationProperties() != null) {
       properties.putAll(waggleDanceConfiguration.getConfigurationProperties());
     }
+    properties.putAll(metaStore.getConfigurationProperties());
     return newHiveInstance(metaStore, properties);
   }
 
