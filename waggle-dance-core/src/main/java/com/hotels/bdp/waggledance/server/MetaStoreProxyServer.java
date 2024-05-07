@@ -84,9 +84,6 @@ public class MetaStoreProxyServer implements ApplicationRunner {
   private final Lock startLock;
   private final Condition startCondition;
   private TServer tServer;
-//  private static HadoopThriftAuthBridge.Server saslServer;
-//  private static SaslServerAndMDT saslServerAndMDT;
-  private static boolean useSasl;
   private SaslServerWrapper saslServerWrapper;
 
   @Autowired
@@ -165,7 +162,7 @@ public class MetaStoreProxyServer implements ApplicationRunner {
       boolean tcpKeepAlive = hiveConf.getBoolVar(ConfVars.METASTORE_TCP_KEEP_ALIVE);
       boolean useFramedTransport = hiveConf.getBoolVar(ConfVars.METASTORE_USE_THRIFT_FRAMED_TRANSPORT);
       boolean useSSL = hiveConf.getBoolVar(ConfVars.HIVE_METASTORE_USE_SSL);
-      useSasl = hiveConf.getBoolVar(ConfVars.METASTORE_USE_THRIFT_SASL);
+      boolean useSasl = hiveConf.getBoolVar(ConfVars.METASTORE_USE_THRIFT_SASL);
 
       //load 'hadoop.proxyuser' configs
       ProxyUsers.refreshSuperUserGroupsConfiguration(hiveConf);
