@@ -24,6 +24,7 @@ import org.apache.hadoop.hive.metastore.security.HadoopThriftAuthBridge;
 import org.apache.hadoop.hive.metastore.security.HadoopThriftAuthBridge.Server;
 import org.apache.hadoop.hive.metastore.security.MetastoreDelegationTokenManager;
 import org.apache.hadoop.hive.ql.metadata.Hive;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.thrift.transport.TTransportException;
 import org.springframework.stereotype.Component;
 
@@ -48,6 +49,8 @@ public class SaslServerWrapper {
     if (!useSasl) {
       return;
     }
+
+    UserGroupInformation.setConfiguration(conf);
 
     if (SaslHelper.isSASLWithKerberizedHadoop(conf)) {
       saslServer =
