@@ -1,17 +1,15 @@
 /**
  * Copyright (C) 2016-2024 Expedia, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 package com.hotels.bdp.waggledance.client;
 
@@ -21,6 +19,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.security.PrivilegedExceptionAction;
 import java.time.Duration;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -76,7 +75,6 @@ public class SaslThriftMetastoreClientManager extends AbstractThriftMetastoreCli
       return;
     }
     Exception exception = null;
-    boolean useSasl = conf.getBoolVar(ConfVars.METASTORE_USE_THRIFT_SASL);
     boolean useSsl = conf.getBoolVar(ConfVars.HIVE_METASTORE_USE_SSL);
     boolean useCompactProtocol = conf.getBoolVar(ConfVars.METASTORE_USE_THRIFT_COMPACT_PROTOCOL);
     int clientSocketTimeout = (int) conf.getTimeVar(ConfVars.METASTORE_CLIENT_SOCKET_TIMEOUT,
@@ -157,7 +155,7 @@ public class SaslThriftMetastoreClientManager extends AbstractThriftMetastoreCli
             } else {
               log.debug("Connection opened with out #set_ugi call',  on URI {}", store);
             }
-          } catch (TException |IOException | ExecutionException e) {
+          } catch (TException | IOException | ExecutionException e) {
             exception = e;
             if (log.isDebugEnabled()) {
               log.warn("Failed to connect to the MetaStore Server, URI " + store, e);
@@ -203,6 +201,24 @@ public class SaslThriftMetastoreClientManager extends AbstractThriftMetastoreCli
       this.msUri = msUri;
       this.username = username;
       this.client = client;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      DelegationTokenKey that = (DelegationTokenKey) o;
+      return Objects.equals(msUri, that.msUri) && Objects.equals(username,
+          that.username);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(msUri, username);
     }
   }
 

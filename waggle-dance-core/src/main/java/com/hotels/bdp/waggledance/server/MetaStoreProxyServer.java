@@ -173,12 +173,6 @@ public class MetaStoreProxyServer implements ApplicationRunner {
         serverSocket = new TServerSocketKeepAlive(serverSocket);
       }
 
-      if(useSasl) {
-        UserGroupInformation.setConfiguration(hiveConf);
-//        saslServerAndMDT = SaslHelper.createSaslServer(hiveConf);
-//        saslServer = saslServerAndMDT.getSaslServer();
-      }
-
       TTransportFactory transFactory = createTTransportFactory(useFramedTransport, useSasl,
           saslServerWrapper.getSaslServer());
       TProcessorFactory tProcessorFactory = getTProcessorFactory(useSasl, saslServerWrapper.getSaslServer());
