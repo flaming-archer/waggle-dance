@@ -15,15 +15,12 @@ package com.hotels.bdp.waggledance.client;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-import java.io.IOException;
-import java.net.URI;
-import java.security.PrivilegedExceptionAction;
-import java.time.Duration;
-import java.util.Objects;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-
-import javax.security.sasl.SaslException;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+import com.hotels.bdp.waggledance.client.compatibility.HiveCompatibleThriftHiveMetastoreIfaceFactory;
+import com.hotels.bdp.waggledance.context.CommonBeans;
+import lombok.extern.log4j.Log4j2;
 
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
@@ -38,17 +35,18 @@ import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TCompactProtocol;
 import org.apache.thrift.protocol.TProtocol;
+import org.apache.thrift.transport.TFramedTransport;
 import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransport;
 
-import lombok.extern.log4j.Log4j2;
-
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
-
-import com.hotels.bdp.waggledance.client.compatibility.HiveCompatibleThriftHiveMetastoreIfaceFactory;
-import com.hotels.bdp.waggledance.context.CommonBeans;
+import java.io.IOException;
+import java.net.URI;
+import java.security.PrivilegedExceptionAction;
+import java.time.Duration;
+import java.util.Objects;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import javax.security.sasl.SaslException;
 
 @Log4j2
 public class SaslThriftMetastoreClientManager extends AbstractThriftMetastoreClientManager {
@@ -74,8 +72,25 @@ public class SaslThriftMetastoreClientManager extends AbstractThriftMetastoreCli
     if (isConnected) {
       return;
     }
-    Exception exception = null;
+    createMetastoreClientAndOpen(null, ugiArgs);
+    if (impersonationEnabled) {
+      try {
+        String userName = UserGroupInformation.getCurrentUser().getShortUserName();
+        DelegationTokenKey key = new DelegationTokenKey(msUri, userName, client);
+        String delegationToken = delegationTokenCache.get(key);
+        close();
+        createMetastoreClientAndOpen(delegationToken, ugiArgs);
+      } catch (IOException | ExecutionException e) {
+        throw new RuntimeException(e);
+      }
+    }
+  }
+
+  void createMetastoreClientAndOpen(String delegationToken, HiveUgiArgs ugiArgs) {
+    TException te = null;
+    boolean useSasl = conf.getBoolVar(ConfVars.METASTORE_USE_THRIFT_SASL);
     boolean useSsl = conf.getBoolVar(ConfVars.HIVE_METASTORE_USE_SSL);
+    boolean useFramedTransport = conf.getBoolVar(ConfVars.METASTORE_USE_THRIFT_FRAMED_TRANSPORT);
     boolean useCompactProtocol = conf.getBoolVar(ConfVars.METASTORE_USE_THRIFT_COMPACT_PROTOCOL);
     int clientSocketTimeout = (int) conf.getTimeVar(ConfVars.METASTORE_CLIENT_SOCKET_TIMEOUT,
         TimeUnit.MILLISECONDS);
@@ -89,17 +104,33 @@ public class SaslThriftMetastoreClientManager extends AbstractThriftMetastoreCli
           // Wrap thrift connection with SASL for secure connection.
           try {
             UserGroupInformation.setConfiguration(conf);
-            String principalConfig = conf.getVar(ConfVars.METASTORE_KERBEROS_PRINCIPAL);
-            transport = UserGroupInformation.getLoginUser().doAs(
-                (PrivilegedExceptionAction<TTransport>) () -> {
-                  try {
-                    return KerberosSaslHelper
-                        .getKerberosTransport(principalConfig, store.getHost(), transport,
-                            MetaStoreUtils.getMetaStoreSaslProperties(conf, useSsl), false);
-                  } catch (SaslException e) {
-                    throw new RuntimeException(e);
-                  }
-                });
+
+            // check if we should use delegation tokens to authenticate
+            // the call below gets hold of the tokens if they are set up by hadoop
+            // this should happen on the map/reduce tasks if the client added the
+            // tokens into hadoop's credential store in the front end during job
+            // submission.
+            //              String tokenSig = conf.getVar(ConfVars.METASTORE_TOKEN_SIGNATURE);
+            // tokenSig could be null
+            if (impersonationEnabled && delegationToken != null) {
+              // authenticate using delegation tokens via the "DIGEST" mechanism
+              transport = KerberosSaslHelper
+                  .getTokenTransport(delegationToken,
+                      store.getHost(), transport,
+                      MetaStoreUtils.getMetaStoreSaslProperties(conf, useSsl));
+            } else {
+              String principalConfig = conf.getVar(ConfVars.METASTORE_KERBEROS_PRINCIPAL);
+              transport = UserGroupInformation.getLoginUser().doAs(
+                  (PrivilegedExceptionAction<TTransport>) () -> {
+                    try {
+                      return KerberosSaslHelper
+                          .getKerberosTransport(principalConfig, store.getHost(), transport,
+                              MetaStoreUtils.getMetaStoreSaslProperties(conf, useSsl), false);
+                    } catch (SaslException e) {
+                      throw new RuntimeException(e);
+                    }
+                  });
+            }
           } catch (IOException ioe) {
             log.error("Couldn't create client transport, URI " + store, ioe);
             throw new MetaException(ioe.toString());
@@ -122,31 +153,6 @@ public class SaslThriftMetastoreClientManager extends AbstractThriftMetastoreCli
                     + store
                     + "', total current connections to all metastores: "
                     + CONN_COUNT.incrementAndGet());
-            isConnected = true;
-
-            //use delegation tokens
-            if (impersonationEnabled) {
-              // authenticate using delegation tokens via the "DIGEST" mechanism
-              String userName = UserGroupInformation.getCurrentUser().getShortUserName();
-              DelegationTokenKey key = new DelegationTokenKey(msUri, userName, super.getClient());
-              String delegationToken = delegationTokenCache.get(key);
-
-              //close krb connection, then use delegation token connection
-              close();
-              transport = new TSocket(store.getHost(), store.getPort(), clientSocketTimeout,
-                  connectionTimeout);
-              transport = KerberosSaslHelper
-                  .getTokenTransport(delegationToken,
-                      store.getHost(), transport,
-                      MetaStoreUtils.getMetaStoreSaslProperties(conf, useSsl));
-            }
-
-            transport.open();
-            log
-                .info("Opened a connection to metastore '"
-                    + store
-                    + "', total current connections to all metastores: "
-                    + CONN_COUNT.incrementAndGet());
 
             isConnected = true;
             if (ugiArgs != null) {
@@ -155,8 +161,8 @@ public class SaslThriftMetastoreClientManager extends AbstractThriftMetastoreCli
             } else {
               log.debug("Connection opened with out #set_ugi call',  on URI {}", store);
             }
-          } catch (TException | IOException | ExecutionException e) {
-            exception = e;
+          } catch (TException e) {
+            te = e;
             if (log.isDebugEnabled()) {
               log.warn("Failed to connect to the MetaStore Server, URI " + store, e);
             } else {
@@ -186,7 +192,7 @@ public class SaslThriftMetastoreClientManager extends AbstractThriftMetastoreCli
       throw new RuntimeException("Could not connect to meta store using any of the URIs ["
           + msUri
           + "] provided. Most recent failure: "
-          + StringUtils.stringifyException(exception));
+          + StringUtils.stringifyException(te));
     }
     log.debug("Connected to metastore.");
   }
@@ -220,6 +226,7 @@ public class SaslThriftMetastoreClientManager extends AbstractThriftMetastoreCli
     public int hashCode() {
       return Objects.hash(msUri, username);
     }
+
   }
 
   private static String loadDelegationToken(DelegationTokenKey key) {
